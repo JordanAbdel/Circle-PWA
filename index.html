@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <!-- PWA manifest & theme -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c96442" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#d97757" media="(prefers-color-scheme: dark)" />
+
+  <!-- iOS / Safari PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Circle" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+
+  <!-- General meta -->
+  <meta name="description" content="A personal relationship manager. Track your people, log touchpoints, capture gift ideas." />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <title>Circle — keep your people close</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React 18 + Babel standalone (for JSX) -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+          integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+          integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+          integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y"
+          crossorigin="anonymous"></script>
+
+  <!-- ── data ── -->
+  <script type="text/babel">
+const CADENCES = {
+  weekly:    { label: "Weekly",    days: 7,   hint: "every 7 days" },
+  biweekly:  { label: "Biweekly",  days: 14,  hint: "every 2 weeks" },
+  monthly:   { label: "Monthly",   days: 30,  hint: "every 4 weeks" },
+  quarterly: { label: "Quarterly", days: 90,  hint: "every 3 months" },
+  yearly:    { label: "Yearly",    days: 365, hint: "once a year" },
+};
+
+const INITIAL_CONTACTS = [
+  {
+    id: "c1", name: "Mira Patel", relation: "Sister", cadence: "weekly", lastSeen: 12,
+    notes: "Lives in Portland. Working on her thesis on coastal redwoods.",
+    timeline: [
+      { kind: "Call",          when: "12 days ago", note: "Talked about her thesis defense — May 28." },
+      { kind: "Text",          when: "3 weeks ago", note: "Sent her the photo from Mom's birthday." },
+      { kind: "Saw in person", when: "Apr 4",       note: "Easter weekend at the cabin." },
+      { kind: "Call",          when: "Mar 19",       note: "" },
+    ],
+    gifts: [
+      { id: "g1", text: "Field Guide to Pacific Northwest Lichens", cite: "Mentioned on our walk in March", done: false, tag: "Book" },
+      { id: "g2", text: "Le Labo Santal 33 travel size",           cite: "Said hers ran out",              done: false, tag: "Under $50" },
+      { id: "g3", text: "Mechanical pencil set (Rotring 600)",     cite: "Borrowed mine and didn't give it back", done: true, tag: "Tools" },
+    ],
+  },
+  {
+    id: "c2", name: "Theo Sandberg", relation: "College friend", cadence: "monthly", lastSeen: 47,
+    notes: "Stockholm. Two kids: Liv (6), Otto (3). Designs furniture now.",
+    timeline: [
+      { kind: "Voice note", when: "47 days ago", note: "Caught up on the new studio in Söder." },
+      { kind: "Email",      when: "Mar 02",      note: "Sent him the apartment listing in Brooklyn." },
+      { kind: "Call",       when: "Feb 11",      note: "Otto's birthday." },
+    ],
+    gifts: [
+      { id: "g4", text: "Hand-built ceramic espresso cup",               cite: "Has been collecting them — wants one from each city",  done: false, tag: "Travel-inspired" },
+      { id: "g5", text: "First edition Tove Jansson 'Moominland Midwinter'", cite: "Read it to Liv recently — his copy is falling apart", done: false, tag: "Book" },
+    ],
+  },
+  {
+    id: "c3", name: "Yuki Tanaka", relation: "Mentor", cadence: "quarterly", lastSeen: 38,
+    notes: "Retired professor of urban planning. Tea over Zoom every quarter.",
+    timeline: [
+      { kind: "Video call", when: "38 days ago", note: "Quarterly tea. Discussed the new book on Edo waterways." },
+      { kind: "Letter",     when: "Jan 22",      note: "Hand-written thank you for the holidays." },
+    ],
+    gifts: [
+      { id: "g6", text: "Postcard from any bookshop I visit", cite: "Standing request — she collects them", done: false, tag: "Standing" },
+    ],
+  },
+  {
+    id: "c4", name: "Daniela Rojas", relation: "Cousin", cadence: "monthly", lastSeen: 41,
+    notes: "Mexico City. Architect. Pregnant — due in October.",
+    timeline: [
+      { kind: "Text", when: "41 days ago", note: "Shared baby room renders." },
+      { kind: "Call", when: "Mar 14",      note: "Long catch-up after her trip." },
+    ],
+    gifts: [
+      { id: "g7", text: "Soft muslin swaddle set in natural tones", cite: "Building the nursery — said she's avoiding pastels", done: false, tag: "Baby" },
+      { id: "g8", text: "Aesop hand cream",                          cite: "Mentioned hers is almost out",                    done: false, tag: "Under $50" },
+    ],
+  },
+  {
+    id: "c5", name: "James Okafor", relation: "Old roommate", cadence: "quarterly", lastSeen: 102,
+    notes: "Lagos / London. Works in fintech. Marathon runner.",
+    timeline: [
+      { kind: "Text", when: "102 days ago", note: "Sent congrats on the half marathon PR." },
+      { kind: "Call", when: "Dec 18",       note: "Year-end recap call." },
+    ],
+    gifts: [
+      { id: "g9", text: "Pair of On Cloudboom running shoes", cite: "Mentioned upgrading after Berlin", done: false, tag: "Sport" },
+    ],
+  },
+  {
+    id: "c6", name: "Amelia Brooke", relation: "Partner's mom", cadence: "monthly", lastSeen: 22,
+    notes: "Bath, UK. Gardener. Loves bird-watching at the canal.",
+    timeline: [
+      { kind: "Saw in person", when: "22 days ago", note: "Sunday roast." },
+      { kind: "Text",          when: "Apr 03",      note: "Sent her the goldfinch photo." },
+    ],
+    gifts: [
+      { id: "g10", text: "RHS membership renewal",          cite: "Hers lapses in July",                    done: false, tag: "Renewal" },
+      { id: "g11", text: "Heirloom tomato seed collection", cite: "Wants to try something beyond Brandywines", done: false, tag: "Garden" },
+    ],
+  },
+  {
+    id: "c7", name: "Ravi Kapoor", relation: "Work friend", cadence: "biweekly", lastSeen: 19,
+    notes: "Used to sit next to me at the old company. Coffee every other Friday.",
+    timeline: [
+      { kind: "Coffee", when: "19 days ago", note: "He's interviewing again." },
+      { kind: "Text",   when: "Apr 22",      note: "" },
+    ],
+    gifts: [
+      { id: "g12", text: "Notebook from Postalco", cite: "Liked mine — asked the brand", done: false, tag: "Stationery" },
+    ],
+  },
+  {
+    id: "c8", name: "Hannah Weiss", relation: "Climbing partner", cadence: "weekly", lastSeen: 5,
+    notes: "Climbing every Thursday at the gym.",
+    timeline: [
+      { kind: "Climbed together", when: "5 days ago", note: "Sent the V5 in the cave." },
+    ],
+    gifts: [
+      { id: "g13", text: "Climbing skin salve (Joshua Tree)", cite: "Hers ran out at the crag", done: false, tag: "Sport" },
+    ],
+  },
+  {
+    id: "c9", name: "Marcus Hale", relation: "Uncle", cadence: "quarterly", lastSeen: 71,
+    notes: "Vermont. Beekeeper. Hard of hearing — phone calls only when it's quiet.",
+    timeline: [
+      { kind: "Call", when: "71 days ago", note: "Talked about the bee losses over winter." },
+    ],
+    gifts: [
+      { id: "g14", text: "Vintage Massey-Ferguson workshop manual", cite: "Restoring the 135 again", done: false, tag: "Hobby" },
+    ],
+  },
+  {
+    id: "c10", name: "Nadia Saleh", relation: "Friend", cadence: "monthly", lastSeen: 33,
+    notes: "Berlin. Composer. Two cats.",
+    timeline: [
+      { kind: "Voice note", when: "33 days ago", note: "Sent her a track I was working on." },
+    ],
+    gifts: [
+      { id: "g15", text: "Field recording microphone (Zoom H5)", cite: "Hers got stolen on tour", done: false, tag: "Music" },
+    ],
+  },
+];
+
+function statusOf(contact) {
+  const cad = CADENCES[contact.cadence].days;
+  const ratio = contact.lastSeen / cad;
+  if (ratio < 0.85) return { key: "ok",   label: "On track",  ratio };
+  if (ratio < 1.0)  return { key: "due",  label: "Due soon",  ratio };
+  return                   { key: "over", label: "Overdue",   ratio };
+}
+function initialsOf(name) { return name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase(); }
+function daysWord(n) { return n === 1 ? "1 day" : `${n} days`; }
+  </script>
+
+  <!-- ── icons ── -->
+  <script type="text/babel">
+const Ic = {
+  Home:       (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg>,
+  People:     (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="9" cy="9" r="3.2"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.6.3 4.5 2.1 4.5 4.8"/></svg>,
+  Gift:       (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="3.5" y="9" width="17" height="5" rx="1"/><path d="M5 14v6.5h14V14"/><path d="M12 9v11.5"/><path d="M12 9s-3.5-.2-4.6-2c-.9-1.5.3-3 2-2.6C11.2 4.8 12 9 12 9Z"/><path d="M12 9s3.5-.2 4.6-2c.9-1.5-.3-3-2-2.6C12.8 4.8 12 9 12 9Z"/></svg>,
+  Plus:       (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 5v14M5 12h14"/></svg>,
+  Search:     (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="11" cy="11" r="6"/><path d="m20 20-4.3-4.3"/></svg>,
+  Sun:        (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3.8"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>,
+  Moon:       (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>,
+  Close:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m6 6 12 12M18 6 6 18"/></svg>,
+  Check:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"   strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m5 12 5 5L20 7"/></svg>,
+  ArrowRight: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 12h14M13 6l6 6-6 6"/></svg>,
+  Clock:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>,
+  Phone:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 4.5h3.5L10 9l-2.2 1.3a11 11 0 0 0 5.9 5.9L15 14l4.5 1.5V19A2 2 0 0 1 17.5 21C10 21 3 14 3 6.5A2 2 0 0 1 5 4.5Z"/></svg>,
+  Message:    (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 6h16v11H8l-4 4Z"/></svg>,
+};
+  </script>
+
+  <!-- ── components ── -->
+  <script type="text/babel">
+function CadenceRing({ ratio, initials, status }) {
+  const r = 17;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - Math.min(Math.min(ratio, 1.15), 1));
+  const cls = status === "over" ? "over" : status === "due" ? "due" : "ok";
+  return (
+    <div className="ring" aria-hidden>
+      <svg viewBox="0 0 40 40">
+        <circle className="track" cx="20" cy="20" r={r} />
+        <circle className={`arc ${cls}`} cx="20" cy="20" r={r}
+                strokeDasharray={`${c - offset} ${c}`} />
+      </svg>
+      <div className="ring-initials">{initials}</div>
+    </div>
+  );
+}
+
+function ThemeToggle({ theme, setTheme }) {
+  return (
+    <div className="theme-toggle" role="tablist" aria-label="Theme">
+      <div className="theme-toggle-thumb"
+           style={{ transform: `translateX(${theme === "dark" ? "100%" : "0%"})` }} />
+      <button className={theme === "light" ? "active" : ""} onClick={() => setTheme("light")}
+              role="tab" aria-selected={theme === "light"}>
+        <Ic.Sun className="icon-sm" /> Light
+      </button>
+      <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}
+              role="tab" aria-selected={theme === "dark"}>
+        <Ic.Moon className="icon-sm" /> Dark
+      </button>
+    </div>
+  );
+}
+
+function NavItem({ icon, label, active, count, onClick }) {
+  return (
+    <button className={`nav-item ${active ? "active" : ""}`} onClick={onClick}
+            aria-current={active ? "page" : undefined}>
+      {icon}
+      <span>{label}</span>
+      {count !== undefined && <span className="count">{count}</span>}
+    </button>
+  );
+}
+
+function Sidebar({ view, setView, theme, setTheme, counts, onAdd }) {
+  return (
+    <aside className="sidebar">
+      <div className="brand">
+        <div className="brand-mark" aria-hidden />
+        <div className="brand-name">Circle</div>
+      </div>
+      <nav className="nav" aria-label="Main navigation">
+        <NavItem icon={<Ic.Home className="icon" />}   label="Today"      active={view === "dashboard"} onClick={() => setView("dashboard")} count={counts.attention} />
+        <NavItem icon={<Ic.People className="icon" />} label="People"     active={view === "contacts"}  onClick={() => setView("contacts")}  count={counts.total} />
+        <NavItem icon={<Ic.Gift className="icon" />}   label="Gift vault" active={view === "gifts"}     onClick={() => setView("gifts")}     count={counts.gifts} />
+        <div className="nav-section-title">Cadence</div>
+        <NavItem icon={<span style={{width:14,height:14,borderRadius:"50%",background:"var(--accent)",  display:"inline-block",flexShrink:0}} />} label="Weekly"    onClick={() => setView("contacts")} count={counts.weekly} />
+        <NavItem icon={<span style={{width:14,height:14,borderRadius:"50%",background:"var(--ok)",      display:"inline-block",flexShrink:0}} />} label="Monthly"   onClick={() => setView("contacts")} count={counts.monthly} />
+        <NavItem icon={<span style={{width:14,height:14,borderRadius:"50%",background:"var(--muted-2)", display:"inline-block",flexShrink:0}} />} label="Quarterly" onClick={() => setView("contacts")} count={counts.quarterly} />
+      </nav>
+      <button className="btn btn-primary" onClick={onAdd} style={{justifyContent:"center"}}>
+        <Ic.Plus className="icon" /> Add person
+      </button>
+      <div className="sidebar-footer">
+        <ThemeToggle theme={theme} setTheme={setTheme} />
+        <div className="user-chip">
+          <div className="avatar">EM</div>
+          <div style={{display:"flex",flexDirection:"column"}}>
+            <div style={{fontSize:13,fontWeight:500}}>Eli Marsh</div>
+            <div style={{fontSize:11,color:"var(--muted)"}}>{counts.total} people in your circle</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function MobileNav({ view, setView, counts }) {
+  return (
+    <nav className="mobile-nav" aria-label="Main navigation">
+      <button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}
+              aria-current={view === "dashboard" ? "page" : undefined}>
+        <Ic.Home className="icon" />
+        <span className="label">Today</span>
+        {counts.attention > 0 && <span className="mobile-badge" aria-label={`${counts.attention} need attention`}>{counts.attention}</span>}
+      </button>
+      <button className={view === "contacts" ? "active" : ""} onClick={() => setView("contacts")}
+              aria-current={view === "contacts" ? "page" : undefined}>
+        <Ic.People className="icon" />
+        <span className="label">People</span>
+      </button>
+      <button className={view === "gifts" ? "active" : ""} onClick={() => setView("gifts")}
+              aria-current={view === "gifts" ? "page" : undefined}>
+        <Ic.Gift className="icon" />
+        <span className="label">Gifts</span>
+      </button>
+    </nav>
+  );
+}
+
+function AttentionRow({ contact, onOpen }) {
+  const st = statusOf(contact);
+  const cad = CADENCES[contact.cadence];
+  const overdueBy = contact.lastSeen - cad.days;
+  const nudge =
+    st.key === "over" ? `${daysWord(overdueBy)} overdue` :
+    st.key === "due"  ? "Due this week" : "Recent";
+  return (
+    <button className={`attention-row ${st.key === "over" ? "warn" : st.key} lift`} onClick={onOpen}>
+      <CadenceRing ratio={st.ratio} initials={initialsOf(contact.name)} status={st.key} />
+      <div>
+        <div className="name">{contact.name}</div>
+        <div className="meta">
+          <span>{contact.relation}</span>
+          <span className="dot" aria-hidden />
+          <span>{cad.label.toLowerCase()} cadence</span>
+        </div>
+      </div>
+      <div className="since">
+        {daysWord(contact.lastSeen)}
+        <small>since last touch</small>
+      </div>
+      <div className="nudge">{nudge}</div>
+    </button>
+  );
+}
+
+function StripCard({ contact, dayLabel, onOpen }) {
+  return (
+    <button className="strip-card lift" onClick={onOpen}>
+      <div className="strip-day">{dayLabel}</div>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <div className="avatar">{initialsOf(contact.name)}</div>
+        <div className="strip-name">{contact.name}</div>
+      </div>
+      <div className="strip-foot">
+        <span>{contact.relation}</span>
+        <span>{CADENCES[contact.cadence].label.toLowerCase()}</span>
+      </div>
+    </button>
+  );
+}
+
+function GiftSnap({ contact, gift, onOpen }) {
+  return (
+    <button className="gift-card lift" onClick={onOpen} style={{textAlign:"left"}}>
+      <div className="for">
+        <div className="avatar" style={{width:20,height:20,fontSize:9}}>{initialsOf(contact.name)}</div>
+        for {contact.name.split(" ")[0]}
+      </div>
+      <div className="idea">{gift.text}</div>
+      <div className="quote">"{gift.cite}"</div>
+    </button>
+  );
+}
+
+function ContactRow({ contact, onOpen }) {
+  const st = statusOf(contact);
+  const cad = CADENCES[contact.cadence];
+  const overdueBy = contact.lastSeen - cad.days;
+  const statusText =
+    st.key === "over" ? `${daysWord(overdueBy)} overdue` :
+    st.key === "due"  ? "Due soon" :
+    `${daysWord(contact.lastSeen)} ago`;
+  const statusCls = st.key === "over" ? "warn" : st.key === "due" ? "due" : "";
+  return (
+    <button className="contact-row lift" onClick={onOpen}>
+      <CadenceRing ratio={st.ratio} initials={initialsOf(contact.name)} status={st.key} />
+      <div>
+        <div className="name">{contact.name}</div>
+        <div className="relation">{contact.relation}</div>
+      </div>
+      <div className="right">
+        <div className="cadence-tag">{cad.label}</div>
+        <div className={`status ${statusCls}`}>{statusText}</div>
+      </div>
+    </button>
+  );
+}
+
+function CadencePicker({ value, onChange }) {
+  return (
+    <div className="cadence-grid" role="radiogroup" aria-label="Keep-in-touch cadence">
+      {Object.entries(CADENCES).filter(([k]) => k !== "yearly").map(([k, c]) => (
+        <button key={k} type="button"
+                className={`cadence-opt ${value === k ? "on" : ""}`}
+                onClick={() => onChange(k)} role="radio" aria-checked={value === k}>
+          <span className="label">{c.label}</span>
+          <span className="hint">{c.hint}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function AddContactModal({ open, onClose, onCreate }) {
+  const [name, setName] = React.useState("");
+  const [relation, setRelation] = React.useState("");
+  const [cadence, setCadence] = React.useState("monthly");
+  React.useEffect(() => { if (open) { setName(""); setRelation(""); setCadence("monthly"); } }, [open]);
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [open, onClose]);
+  return (
+    <div className={`modal-scrim ${open ? "open" : ""}`} onClick={onClose}
+         role="dialog" aria-modal="true" aria-label="Add someone to your circle">
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h2>Add someone to your circle</h2>
+        <p className="lead">A person you want to stay close to, and how often you'd like to check in.</p>
+        <div className="field">
+          <label htmlFor="modal-name">Name</label>
+          <input id="modal-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Their full name" autoFocus />
+        </div>
+        <div className="field">
+          <label htmlFor="modal-relation">Relationship</label>
+          <input id="modal-relation" value={relation} onChange={(e) => setRelation(e.target.value)} placeholder="Sister, college friend, mentor…" />
+        </div>
+        <div className="field">
+          <label>Keep-in-touch cadence</label>
+          <CadencePicker value={cadence} onChange={setCadence} />
+        </div>
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-accent" disabled={!name.trim()}
+                  onClick={() => { onCreate({ name: name.trim(), relation: relation.trim() || "Friend", cadence }); onClose(); }}>
+            Add to circle
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift }) {
+  const [draft, setDraft] = React.useState("");
+  const [cite, setCite]   = React.useState("");
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [open, onClose]);
+  if (!contact) return <div className={`drawer ${open ? "open" : ""}`} aria-hidden="true" />;
+  const st = statusOf(contact);
+  const cad = CADENCES[contact.cadence];
+  const overdueBy = contact.lastSeen - cad.days;
+  const sinceLabel =
+    st.key === "over" ? `${daysWord(overdueBy)} overdue` :
+    st.key === "due"  ? "Due soon" : "On track";
+  return (
+    <div className={`drawer ${open ? "open" : ""}`} role="dialog" aria-modal="true"
+         aria-label={`${contact.name} details`}>
+      <div className="drawer-head">
+        <div className="top">
+          <span style={{fontSize:11,letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--muted)"}}>Person</span>
+          <button className="btn btn-ghost" onClick={onClose} aria-label="Close drawer">
+            <Ic.Close className="icon" />
+          </button>
+        </div>
+        <div className="title-row">
+          <div className="avatar lg">{initialsOf(contact.name)}</div>
+          <div>
+            <h2 className="drawer-name">{contact.name}</h2>
+            <div className="drawer-relation">{contact.relation}{contact.notes ? ` — ${contact.notes}` : ""}</div>
+          </div>
+        </div>
+        <div className="drawer-status">
+          <div className="col"><span className="k">Last touch</span><span className="v">{daysWord(contact.lastSeen)}</span></div>
+          <div className="col"><span className="k">Cadence</span><span className="v">{cad.label}</span></div>
+          <div className="col"><span className="k">Status</span>
+            <span className={`v ${st.key === "over" ? "warn" : st.key === "due" ? "due" : ""}`}>{sinceLabel}</span>
+          </div>
+        </div>
+        <div className="drawer-actions">
+          <button className="btn btn-accent" onClick={() => onLog(contact.id)}>
+            <Ic.Check className="icon" /> I reached out
+          </button>
+          <button className="btn"><Ic.Phone className="icon" /> Call</button>
+          <button className="btn"><Ic.Message className="icon" /> Message</button>
+        </div>
+      </div>
+      <div className="drawer-body">
+        <section>
+          <h3 className="block-title">Recent touchpoints <small>{contact.timeline.length} logged</small></h3>
+          <div className="timeline">
+            {contact.timeline.map((t, i) => (
+              <div key={i} className={`tl-item ${i === 0 ? "recent" : ""}`}>
+                <div>
+                  <div className="tl-kind">{t.kind}</div>
+                  {t.note && <div className="tl-note">{t.note}</div>}
+                </div>
+                <div className="tl-when">{t.when}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <h3 className="block-title">
+            Gift vault
+            <small>{contact.gifts.filter(g => !g.done).length} open · {contact.gifts.filter(g => g.done).length} given</small>
+          </h3>
+          <div className="vault">
+            {contact.gifts.map((g) => (
+              <div key={g.id} className={`vault-item ${g.done ? "done" : ""}`}>
+                <button className={`vault-check ${g.done ? "on" : ""}`}
+                        onClick={() => onToggleGift(contact.id, g.id)}
+                        role="checkbox" aria-checked={g.done}
+                        aria-label={g.done ? `Unmark "${g.text}" as given` : `Mark "${g.text}" as given`}>
+                  <div className="vault-check-inner">
+                    {g.done && <Ic.Check className="icon-sm" />}
+                  </div>
+                </button>
+                <div className="vault-text">
+                  <div className="vault-idea">{g.text}</div>
+                  {g.cite && <div className="vault-cite">{g.cite}</div>}
+                </div>
+                {g.tag && <span className="vault-tag">{g.tag}</span>}
+              </div>
+            ))}
+            <div className="vault-add">
+              <Ic.Plus className="icon" style={{color:"var(--muted)",flexShrink:0}} />
+              <input value={draft} onChange={(e) => setDraft(e.target.value)}
+                     placeholder="A new idea they've mentioned…" aria-label="New gift idea"
+                     onKeyDown={(e) => {
+                       if (e.key === "Enter" && draft.trim()) {
+                         onAddGift(contact.id, { text: draft.trim(), cite: cite.trim(), done: false, tag: "" });
+                         setDraft(""); setCite("");
+                       }
+                     }} />
+              <input className="cite-input" value={cite} onChange={(e) => setCite(e.target.value)}
+                     placeholder="where you heard it (optional)" aria-label="Where you heard this gift idea" />
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3 className="block-title">Notes</h3>
+          <div style={{background:"var(--surface)",border:"1px solid var(--line)",borderRadius:"var(--radius)",padding:"14px 16px",fontSize:13.5,lineHeight:1.55,color:"var(--ink-2)"}}>
+            {contact.notes || <span style={{color:"var(--muted)"}}>Add a few details you want to remember…</span>}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+  </script>
+
+  <!-- ── app ── -->
+  <script type="text/babel">
+const { useState, useMemo, useEffect } = React;
+
+function greetingFor(date) {
+  const h = date.getHours();
+  if (h < 5)  return "Burning the midnight oil";
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  if (h < 21) return "Good evening";
+  return "Good night";
+}
+function formatDate(d) {
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+
+function Dashboard({ contacts, openContact, onAdd }) {
+  const sorted = useMemo(() => contacts.slice().sort((a, b) => statusOf(b).ratio - statusOf(a).ratio), [contacts]);
+  const attention   = sorted.filter(c => statusOf(c).key !== "ok");
+  const upcoming    = sorted.filter(c => statusOf(c).key === "due" || statusOf(c).key === "over").slice(0, 4);
+  const recentGifts = useMemo(() => {
+    const rows = [];
+    contacts.forEach(c => c.gifts.filter(g => !g.done).slice(0, 1).forEach(g => rows.push({ c, g })));
+    return rows.slice(0, 3);
+  }, [contacts]);
+  const today        = new Date();
+  const overdueCount = contacts.filter(c => statusOf(c).key === "over").length;
+  const dueCount     = contacts.filter(c => statusOf(c).key === "due").length;
+  const onTrack      = contacts.length - overdueCount - dueCount;
+  const giftCount    = contacts.reduce((s, c) => s + c.gifts.filter(g => !g.done).length, 0);
+  const week    = [3, 1, 2, 0, 4, 2, 1];
+  const weekMax = Math.max(...week);
+  return (
+    <main className="main">
+      <div className="page-header">
+        <div>
+          <h1 className="greeting">{greetingFor(today)},<br/><em>Eli</em></h1>
+          <div className="subgreeting">{formatDate(today)} · {overdueCount > 0 ? `${overdueCount} ${overdueCount === 1 ? "person needs" : "people need"} a nudge` : "You're all caught up"}</div>
+        </div>
+        <button className="btn btn-primary" onClick={onAdd}>
+          <Ic.Plus className="icon" /> Log a touchpoint
+        </button>
+      </div>
+      <div className="stat-row">
+        <div className="stat-card accent">
+          <div>
+            <div className="stat-label">Needs your attention</div>
+            <div className="stat-value">{overdueCount + dueCount}<span className="unit">of {contacts.length}</span></div>
+          </div>
+          <div className="stat-foot">{overdueCount} overdue, {dueCount} due this week. Tap below to reach out.</div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">On track</div>
+            <div className="stat-value">{onTrack}</div>
+          </div>
+          <div className="stat-foot">Within their cadence — no action needed.</div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="stat-label">This week</div>
+            <div className="weekstrip" aria-label="Touchpoints this week">
+              {week.map((v, i) => (
+                <div key={i} className="bar"><div className="fill" style={{height:`${(v/weekMax)*100}%`}} /></div>
+              ))}
+            </div>
+            <div className="weekstrip-labels" aria-hidden>
+              {["M","T","W","T","F","S","S"].map((d,i) => <span key={i}>{d}</span>)}
+            </div>
+          </div>
+          <div className="stat-foot">{week.reduce((a,b)=>a+b,0)} touchpoints logged</div>
+        </div>
+      </div>
+      <section className="section">
+        <div className="section-head">
+          <h2 className="section-title">Who needs you most</h2>
+          <span className="section-meta">Sorted by urgency · {attention.length} people</span>
+        </div>
+        <div className="attention-list">
+          {attention.length === 0 && <div className="empty-soft">Beautifully empty. Your circle is in great shape today.</div>}
+          {attention.slice(0, 5).map(c => <AttentionRow key={c.id} contact={c} onOpen={() => openContact(c.id)} />)}
+        </div>
+      </section>
+      <section className="section">
+        <div className="section-head">
+          <h2 className="section-title">Coming up</h2>
+          <span className="section-meta">Next four nudges</span>
+        </div>
+        <div className="strip">
+          {upcoming.map(c => {
+            const cad = CADENCES[c.cadence];
+            const overdueBy = c.lastSeen - cad.days;
+            return <StripCard key={c.id} contact={c} dayLabel={overdueBy > 0 ? `${daysWord(overdueBy)} late` : "this week"} onOpen={() => openContact(c.id)} />;
+          })}
+        </div>
+      </section>
+      <section className="section">
+        <div className="section-head">
+          <h2 className="section-title">Recent gift ideas</h2>
+          <span className="section-meta">{giftCount} ideas across your circle</span>
+        </div>
+        <div className="gift-snap">
+          {recentGifts.map(({ c, g }) => <GiftSnap key={g.id} contact={c} gift={g} onOpen={() => openContact(c.id)} />)}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ContactsPage({ contacts, openContact, onAdd }) {
+  const [q, setQ]           = useState("");
+  const [filter, setFilter] = useState("all");
+  const list = useMemo(() => {
+    return contacts.filter(c => {
+      if (q && !(`${c.name} ${c.relation}`.toLowerCase().includes(q.toLowerCase()))) return false;
+      const st = statusOf(c).key;
+      if (filter === "over"      && st !== "over")            return false;
+      if (filter === "due"       && st !== "due")             return false;
+      if (filter === "ok"        && st !== "ok")              return false;
+      if (filter === "weekly"    && c.cadence !== "weekly")    return false;
+      if (filter === "monthly"   && c.cadence !== "monthly")   return false;
+      if (filter === "quarterly" && c.cadence !== "quarterly") return false;
+      return true;
+    }).sort((a, b) => statusOf(b).ratio - statusOf(a).ratio);
+  }, [contacts, q, filter]);
+  return (
+    <main className="main">
+      <div className="page-header">
+        <div>
+          <h1 className="greeting">People</h1>
+          <div className="subgreeting">{contacts.length} in your circle · sorted by who's most overdue</div>
+        </div>
+        <button className="btn btn-primary" onClick={onAdd}><Ic.Plus className="icon" /> Add person</button>
+      </div>
+      <div className="toolbar">
+        <div className="search">
+          <Ic.Search className="icon" style={{color:"var(--muted)"}} />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search by name or relationship…" aria-label="Search contacts" />
+        </div>
+        <div className="chips" role="group" aria-label="Filter contacts">
+          {[["all","Everyone"],["over","Overdue"],["due","Due soon"],["weekly","Weekly"],["monthly","Monthly"],["quarterly","Quarterly"]].map(([k, label]) => (
+            <button key={k} className={`chip ${filter === k ? "on" : ""}`} onClick={() => setFilter(k)} aria-pressed={filter === k}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="contact-grid">
+        {list.map(c => <ContactRow key={c.id} contact={c} onOpen={() => openContact(c.id)} />)}
+      </div>
+      {list.length === 0 && <div className="empty-soft" style={{textAlign:"center",padding:"40px 0"}}>No one matches that — try a different filter.</div>}
+    </main>
+  );
+}
+
+function GiftsPage({ contacts, openContact }) {
+  const allGifts = useMemo(() => {
+    const rows = [];
+    contacts.forEach(c => c.gifts.forEach(g => rows.push({ c, g })));
+    return rows;
+  }, [contacts]);
+  const open  = allGifts.filter(r => !r.g.done);
+  const given = allGifts.filter(r => r.g.done);
+  return (
+    <main className="main">
+      <div className="page-header">
+        <div>
+          <h1 className="greeting">Gift vault</h1>
+          <div className="subgreeting">Things people have mentioned wanting — captured before they're forgotten</div>
+        </div>
+      </div>
+      <section className="section" style={{marginTop:0}}>
+        <div className="section-head">
+          <h2 className="section-title">Open ideas</h2>
+          <span className="section-meta">{open.length} across {new Set(open.map(r => r.c.id)).size} people</span>
+        </div>
+        <div className="gift-snap">
+          {open.map(({ c, g }) => <GiftSnap key={g.id} contact={c} gift={g} onOpen={() => openContact(c.id)} />)}
+        </div>
+      </section>
+      <section className="section">
+        <div className="section-head">
+          <h2 className="section-title">Already given</h2>
+          <span className="section-meta">{given.length} delivered</span>
+        </div>
+        <div className="gift-snap">
+          {given.map(({ c, g }) => (
+            <div key={g.id} className="gift-card" style={{opacity:0.65}}>
+              <div className="for"><div className="avatar" style={{width:20,height:20,fontSize:9}}>{initialsOf(c.name)}</div>given to {c.name.split(" ")[0]}</div>
+              <div className="idea" style={{textDecoration:"line-through",textDecorationColor:"var(--line-2)"}}>{g.text}</div>
+              <div className="quote">"{g.cite}"</div>
+            </div>
+          ))}
+          {given.length === 0 && <div className="empty-soft">Mark gifts as given from a person's page to see them here.</div>}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem("circle-theme") || "light"; } catch { return "light"; } });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("circle-theme", theme); } catch {}
+  }, [theme]);
+  const [contacts, setContacts] = useState(INITIAL_CONTACTS);
+  const [view, setView]         = useState("dashboard");
+  const [openId, setOpenId]     = useState(null);
+  const [addOpen, setAddOpen]   = useState(false);
+  const counts = useMemo(() => ({
+    total:     contacts.length,
+    attention: contacts.filter(c => statusOf(c).key !== "ok").length,
+    gifts:     contacts.reduce((s, c) => s + c.gifts.filter(g => !g.done).length, 0),
+    weekly:    contacts.filter(c => c.cadence === "weekly").length,
+    monthly:   contacts.filter(c => c.cadence === "monthly").length,
+    quarterly: contacts.filter(c => c.cadence === "quarterly").length,
+  }), [contacts]);
+  const openContact   = (id) => setOpenId(id);
+  const closeDrawer   = ()   => setOpenId(null);
+  const logTouchpoint = (id) => setContacts(cs => cs.map(c =>
+    c.id === id ? { ...c, lastSeen: 0, timeline: [{ kind: "Reached out", when: "just now", note: "Logged via Circle" }, ...c.timeline] } : c
+  ));
+  const toggleGift = (cid, gid) => setContacts(cs => cs.map(c =>
+    c.id === cid ? { ...c, gifts: c.gifts.map(g => g.id === gid ? { ...g, done: !g.done } : g) } : c
+  ));
+  const addGift = (cid, gift) => setContacts(cs => cs.map(c =>
+    c.id === cid ? { ...c, gifts: [...c.gifts, { ...gift, id: "g" + Math.random().toString(36).slice(2, 8) }] } : c
+  ));
+  const addContact = ({ name, relation, cadence }) => {
+    const id = "c" + Math.random().toString(36).slice(2, 8);
+    setContacts(cs => [...cs, { id, name, relation, cadence, lastSeen: 0, notes: "", timeline: [{ kind: "Added to circle", when: "just now", note: "" }], gifts: [] }]);
+  };
+  const openContactObj = contacts.find(c => c.id === openId);
+  return (
+    <div className="app">
+      <Sidebar view={view} setView={setView} theme={theme} setTheme={setTheme} counts={counts} onAdd={() => setAddOpen(true)} />
+      {view === "dashboard" && <Dashboard contacts={contacts} openContact={openContact} onAdd={() => setAddOpen(true)} />}
+      {view === "contacts"  && <ContactsPage contacts={contacts} openContact={openContact} onAdd={() => setAddOpen(true)} />}
+      {view === "gifts"     && <GiftsPage contacts={contacts} openContact={openContact} />}
+      {(view === "dashboard" || view === "contacts") && (
+        <button className="mobile-fab" onClick={() => setAddOpen(true)} aria-label="Add person">
+          <Ic.Plus className="icon" />
+        </button>
+      )}
+      <MobileNav view={view} setView={setView} counts={counts} />
+      <div className={`scrim ${openId ? "open" : ""}`} onClick={closeDrawer} aria-hidden="true" />
+      <ContactDrawer contact={openContactObj} open={!!openId} onClose={closeDrawer}
+                     onLog={logTouchpoint} onToggleGift={toggleGift} onAddGift={addGift} />
+      <AddContactModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={addContact} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+
+  <!-- Service worker registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js')
+          .catch(function (err) { console.warn('SW registration failed:', err); });
+      });
+    }
+  </script>
+</body>
+</html>
