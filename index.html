@@ -439,7 +439,7 @@ function AddContactModal({ open, onClose, onCreate }) {
   );
 }
 
-function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift }) {
+function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift, onDelete }) {
   const [draft, setDraft] = React.useState("");
   const [cite, setCite]   = React.useState("");
   React.useEffect(() => {
@@ -545,6 +545,14 @@ function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift 
           <div style={{background:"var(--surface)",border:"1px solid var(--line)",borderRadius:"var(--radius)",padding:"14px 16px",fontSize:13.5,lineHeight:1.55,color:"var(--ink-2)"}}>
             {contact.notes || <span style={{color:"var(--muted)"}}>Add a few details you want to remember…</span>}
           </div>
+        </section>
+
+        <section style={{borderTop:"1px solid var(--line)",paddingTop:24,marginTop:8}}>
+          <button className="btn btn-danger" style={{width:"100%",justifyContent:"center",borderRadius:"var(--radius)"}}
+                  onClick={() => { if (window.confirm(`Remove ${contact.name} from your circle?`)) { onDelete(contact.id); onClose(); } }}
+                  aria-label={`Remove ${contact.name} from circle`}>
+            Remove from circle
+          </button>
         </section>
       </div>
     </div>
@@ -779,6 +787,8 @@ function App() {
   const addGift = (cid, gift) => setContacts(cs => cs.map(c =>
     c.id === cid ? { ...c, gifts: [...c.gifts, { ...gift, id: "g" + Math.random().toString(36).slice(2, 8) }] } : c
   ));
+  const deleteContact = (id) => setContacts(cs => cs.filter(c => c.id !== id));
+
   const addContact = ({ name, relation, cadence }) => {
     const id = "c" + Math.random().toString(36).slice(2, 8);
     setContacts(cs => [...cs, { id, name, relation, cadence, lastSeen: 0, notes: "", timeline: [{ kind: "Added to circle", when: "just now", note: "" }], gifts: [] }]);
@@ -798,7 +808,7 @@ function App() {
       <MobileNav view={view} setView={setView} counts={counts} />
       <div className={`scrim ${openId ? "open" : ""}`} onClick={closeDrawer} aria-hidden="true" />
       <ContactDrawer contact={openContactObj} open={!!openId} onClose={closeDrawer}
-                     onLog={logTouchpoint} onToggleGift={toggleGift} onAddGift={addGift} />
+                     onLog={logTouchpoint} onToggleGift={toggleGift} onAddGift={addGift} onDelete={deleteContact} />
       <AddContactModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={addContact} />
     </div>
   );

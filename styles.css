@@ -674,6 +674,14 @@ input, textarea { font: inherit; color: inherit; }
 /* hover lift on cards is subtle */
 .lift:hover { transform: translateY(-1px); }
 
+/* delete button in drawer */
+.btn-danger {
+  border-color: transparent;
+  background: transparent;
+  color: var(--warn);
+}
+.btn-danger:hover { background: var(--warn-soft); border-color: transparent; }
+
 /* ---------- Mobile bottom nav (hidden on desktop) ---------- */
 .mobile-nav { display: none; }
 
@@ -694,6 +702,7 @@ input, textarea { font: inherit; color: inherit; }
   .main {
     padding: 20px 16px 88px;
     max-width: 100%;
+    overflow-x: hidden;
   }
 
   .page-header {
@@ -752,27 +761,30 @@ input, textarea { font: inherit; color: inherit; }
     grid-template-columns: 1fr;
   }
 
-  /* Toolbar chips: horizontally scrollable */
+  /* Toolbar: stack search then chips on separate rows */
   .toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 4px;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: visible;
   }
-
-  .toolbar::-webkit-scrollbar { display: none; }
 
   .search {
     max-width: none;
-    flex-shrink: 0;
-    min-width: 160px;
+    width: 100%;
+    flex-shrink: unset;
+    min-width: unset;
   }
 
   .chips {
-    flex-shrink: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap;
+    flex-shrink: 0;
+    padding-bottom: 2px;
   }
+
+  .chips::-webkit-scrollbar { display: none; }
 
   /* Drawer: full-width on mobile */
   .drawer {
