@@ -271,7 +271,7 @@ function Sidebar({ view, setView, theme, setTheme, counts, onAdd }) {
         <div className="user-chip">
           <div className="avatar">EM</div>
           <div style={{display:"flex",flexDirection:"column"}}>
-            <div style={{fontSize:13,fontWeight:500}}>Eli Marsh</div>
+            <div style={{fontSize:13,fontWeight:500}}>Jordan</div>
             <div style={{fontSize:11,color:"var(--muted)"}}>{counts.total} people in your circle</div>
           </div>
         </div>
@@ -596,7 +596,7 @@ function Dashboard({ contacts, openContact, onAdd }) {
     <main className="main">
       <div className="page-header">
         <div>
-          <h1 className="greeting">{greetingFor(today)},<br/><em>Eli</em></h1>
+          <h1 className="greeting">{greetingFor(today)},<br/><em>Jordan</em></h1>
           <div className="subgreeting">{formatDate(today)} · {overdueCount > 0 ? `${overdueCount} ${overdueCount === 1 ? "person needs" : "people need"} a nudge` : "You're all caught up"}</div>
         </div>
         <button className="btn btn-primary" onClick={onAdd}>

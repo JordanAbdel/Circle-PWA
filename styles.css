@@ -700,7 +700,7 @@ input, textarea { font: inherit; color: inherit; }
 
   /* Main content with bottom nav clearance */
   .main {
-    padding: 20px 16px 88px;
+    padding: 20px 16px 104px;
     max-width: 100%;
     overflow-x: hidden;
   }
@@ -843,10 +843,11 @@ input, textarea { font: inherit; color: inherit; }
   display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 60px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* 68px tap area + safe-area so the bar floats above the home indicator */
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
   background: var(--bg);
   border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.06);
   z-index: 30;
   align-items: stretch;
 }
@@ -863,13 +864,14 @@ input, textarea { font: inherit; color: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   font-size: 10px;
   color: var(--muted);
   transition: color .15s ease;
-  min-height: 60px;
+  min-height: 68px;
   position: relative;
   border-radius: 0;
+  padding-top: 10px;
 }
 
 .mobile-nav button.active {
@@ -903,7 +905,7 @@ input, textarea { font: inherit; color: inherit; }
 @media (max-width: 768px) {
   .mobile-fab {
     position: fixed;
-    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(84px + max(env(safe-area-inset-bottom, 16px), 16px));
     right: 16px;
     z-index: 35;
     width: 52px;
