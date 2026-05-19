@@ -851,7 +851,14 @@ function App() {
 
   const deleteContact = (id) => {
     setContacts(cs => cs.filter(c => c.id !== id));
-    if (db) db.from('contacts').delete().eq('id', id);
+    if (db) {
+      db.from('contacts').delete().eq('id', id).then(({ error }) => {
+        if (error) console.error('Delete failed:', error);
+        else console.log('Deleted contact', id);
+      });
+    } else {
+      console.warn('db is null — delete not persisted');
+    }
   };
 
   const addContact = ({ name, relation, cadence }) => {
