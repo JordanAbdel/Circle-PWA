@@ -810,15 +810,8 @@ function App() {
     }
     db.from('contacts').select('*').order('created_at').then(({ data, error }) => {
       if (error) { console.error('Failed to load contacts:', error); setLoading(false); return; }
-      if (data.length === 0) {
-        db.from('contacts').insert(INITIAL_CONTACTS.map(toRow)).then(({ error: e }) => {
-          if (!e) setContacts(INITIAL_CONTACTS);
-          setLoading(false);
-        });
-      } else {
-        setContacts(data.map(fromRow));
-        setLoading(false);
-      }
+      setContacts(data.map(fromRow));
+      setLoading(false);
     });
   }, []);
 
@@ -874,7 +867,15 @@ function App() {
     const id = "c" + Math.random().toString(36).slice(2, 8);
     const newContact = { id, name, relation, cadence, lastSeen: 0, notes: "", timeline: [{ kind: "Added to circle", when: "just now", note: "" }], gifts: [] };
     setContacts(cs => [...cs, newContact]);
-    if (db) db.from('contacts').insert(toRow(newContact));
+    if (db) {
+      db.from('contacts').insert(toRow(newContact)).then(({ error }) => {
+        if (error) {
+          console.error('Add contact failed:', error);
+          setContacts(cs => cs.filter(c => c.id !== id));
+          alert('Failed to save contact: ' + error.message);
+        }
+      });
+    }
   };
 
   const openContactObj = contacts.find(c => c.id === openId);
