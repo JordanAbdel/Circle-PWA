@@ -325,7 +325,7 @@ function App() {
         </button>
       )}
 
-      <MobileNav view={view} setView={setView} counts={counts} />
+      <MobileNav view={view} setView={setView} counts={counts} theme={theme} setTheme={setTheme} />
 
       <div className={`scrim ${openId ? "open" : ""}`} onClick={closeDrawer} aria-hidden="true" />
       <ContactDrawer

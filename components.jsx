@@ -72,9 +72,9 @@ function Sidebar({ view, setView, theme, setTheme, counts, onAdd }) {
       <div className="sidebar-footer">
         <ThemeToggle theme={theme} setTheme={setTheme} />
         <div className="user-chip">
-          <div className="avatar">EM</div>
+          <div className="avatar">JA</div>
           <div style={{display:"flex",flexDirection:"column"}}>
-            <div style={{fontSize:13,fontWeight:500}}>Eli Marsh</div>
+            <div style={{fontSize:13,fontWeight:500}}>Jordan</div>
             <div style={{fontSize:11,color:"var(--muted)"}}>{counts.total} people in your circle</div>
           </div>
         </div>
@@ -83,7 +83,7 @@ function Sidebar({ view, setView, theme, setTheme, counts, onAdd }) {
   );
 }
 
-function MobileNav({ view, setView, counts }) {
+function MobileNav({ view, setView, counts, theme, setTheme }) {
   return (
     <nav className="mobile-nav" aria-label="Main navigation">
       <button className={view === "dashboard" ? "active" : ""}
@@ -104,6 +104,11 @@ function MobileNav({ view, setView, counts }) {
               aria-current={view === "gifts" ? "page" : undefined}>
         <Ic.Gift className="icon" />
         <span className="label">Gifts</span>
+      </button>
+      <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+        {theme === "dark" ? <Ic.Sun className="icon" /> : <Ic.Moon className="icon" />}
+        <span className="label">{theme === "dark" ? "Light" : "Dark"}</span>
       </button>
     </nav>
   );
