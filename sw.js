@@ -1,6 +1,6 @@
 // Bump SW_VERSION any time you deploy meaningful content changes.
 // This ensures the old cache is purged and fresh assets are fetched.
-const SW_VERSION = "2025-05-19-1";
+const SW_VERSION = "2025-05-19-2";
 const CACHE = `circle-${SW_VERSION}`;
 
 // Only pre-cache CDN scripts — these URLs are version-pinned and immutable.
@@ -10,6 +10,9 @@ const CDN_PRECACHE = [
   "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
   "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
 ];
+
+// Only cache-first these CDN hosts — everything else (APIs, Supabase) must go to the network.
+const CDN_HOSTS = ["unpkg.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -46,9 +49,8 @@ self.addEventListener("fetch", (e) => {
         })
         .catch(() => caches.match(e.request))
     );
-  } else {
-    // Cache-first for CDN scripts — their URLs are version-pinned so they're
-    // effectively immutable. This avoids re-downloading React/Babel on every load.
+  } else if (CDN_HOSTS.some(h => url.hostname.endsWith(h))) {
+    // Cache-first only for version-pinned CDN scripts — effectively immutable.
     e.respondWith(
       caches.match(e.request).then((cached) => {
         if (cached) return cached;
@@ -62,4 +64,5 @@ self.addEventListener("fetch", (e) => {
       })
     );
   }
+  // All other cross-origin requests (Supabase API, etc.) go straight to the network.
 });
