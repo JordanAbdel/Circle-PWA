@@ -832,7 +832,9 @@ function App() {
     if (!contact) return;
     const updated = { ...contact, lastSeen: 0, timeline: [{ kind, when: "just now", note: "Logged via Circle" }, ...contact.timeline] };
     setContacts(cs => cs.map(c => c.id === id ? updated : c));
-    if (db) db.from('contacts').update(toRow(updated)).eq('id', id);
+    if (db) db.from('contacts').update(toRow(updated)).eq('id', id).then(({ error }) => {
+      if (error) console.error('Failed to save touchpoint:', error);
+    });
   };
 
   const toggleGift = (cid, gid) => {
@@ -840,7 +842,9 @@ function App() {
     if (!contact) return;
     const updated = { ...contact, gifts: contact.gifts.map(g => g.id === gid ? { ...g, done: !g.done } : g) };
     setContacts(cs => cs.map(c => c.id === cid ? updated : c));
-    if (db) db.from('contacts').update(toRow(updated)).eq('id', cid);
+    if (db) db.from('contacts').update(toRow(updated)).eq('id', cid).then(({ error }) => {
+      if (error) console.error('Failed to save gift update:', error);
+    });
   };
 
   const addGift = (cid, gift) => {
@@ -848,7 +852,9 @@ function App() {
     if (!contact) return;
     const updated = { ...contact, gifts: [...contact.gifts, { ...gift, id: "g" + Math.random().toString(36).slice(2, 8) }] };
     setContacts(cs => cs.map(c => c.id === cid ? updated : c));
-    if (db) db.from('contacts').update(toRow(updated)).eq('id', cid);
+    if (db) db.from('contacts').update(toRow(updated)).eq('id', cid).then(({ error }) => {
+      if (error) console.error('Failed to save new gift:', error);
+    });
   };
 
   const deleteContact = (id) => {
