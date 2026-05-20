@@ -59,7 +59,7 @@
 
   <!-- ── data ── -->
   <script type="text/babel">
-const APP_VERSION = "2.3.2";
+const APP_VERSION = "2.3.3";
 
 const CADENCES = {
   weekly:    { label: "Weekly",    days: 7,   hint: "every 7 days" },
@@ -214,6 +214,7 @@ const Ic = {
   Clock:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>,
   Phone:      (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M5 4.5h3.5L10 9l-2.2 1.3a11 11 0 0 0 5.9 5.9L15 14l4.5 1.5V19A2 2 0 0 1 17.5 21C10 21 3 14 3 6.5A2 2 0 0 1 5 4.5Z"/></svg>,
   Message:    (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M4 6h16v11H8l-4 4Z"/></svg>,
+  Bell:       (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
 };
   </script>
 
@@ -463,7 +464,7 @@ function AddContactModal({ open, onClose, onCreate }) {
   );
 }
 
-function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift, onDelete }) {
+function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift, onDelete, onUrgent }) {
   const [draft, setDraft] = React.useState("");
   const [cite, setCite]   = React.useState("");
   React.useEffect(() => {
@@ -509,6 +510,7 @@ function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift,
           </button>
           <button className="btn" onClick={() => onLog(contact.id, "Called")}><Ic.Phone className="icon" /> Call</button>
           <button className="btn" onClick={() => onLog(contact.id, "Messaged")}><Ic.Message className="icon" /> Message</button>
+          <button className="btn" onClick={() => onUrgent(contact.id)} style={{color:"var(--accent)"}} aria-label="Flag as urgent"><Ic.Bell className="icon" /></button>
         </div>
       </div>
       <div className="drawer-body">
@@ -857,6 +859,18 @@ function App() {
     });
   };
 
+  const markUrgent = (id) => {
+    const contact = contacts.find(c => c.id === id);
+    if (!contact) return;
+    const updated = { ...contact, lastSeen: contact.lastSeen + 30 };
+    setContacts(cs => cs.map(c => c.id === id ? updated : c));
+    if (db) db.from('contacts').update(toRow(updated)).eq('id', id).then(({ error }) => {
+      if (error) console.error('Failed to mark urgent:', error);
+    });
+    closeDrawer();
+    setView("dashboard");
+  };
+
   const deleteContact = (id) => {
     setContacts(cs => cs.filter(c => c.id !== id));
     if (db) {
@@ -906,7 +920,7 @@ function App() {
       <MobileNav view={view} setView={setView} counts={counts} theme={theme} setTheme={setTheme} />
       <div className={`scrim ${openId ? "open" : ""}`} onClick={closeDrawer} aria-hidden="true" />
       <ContactDrawer contact={openContactObj} open={!!openId} onClose={closeDrawer}
-                     onLog={logTouchpoint} onToggleGift={toggleGift} onAddGift={addGift} onDelete={deleteContact} />
+                     onLog={logTouchpoint} onToggleGift={toggleGift} onAddGift={addGift} onDelete={deleteContact} onUrgent={markUrgent} />
       <AddContactModal open={addOpen} onClose={() => setAddOpen(false)} onCreate={addContact} />
     </div>
   );
