@@ -59,7 +59,7 @@
 
   <!-- ── data ── -->
   <script type="text/babel">
-const APP_VERSION = "2.3.3";
+const APP_VERSION = "2.3.4";
 
 const CADENCES = {
   weekly:    { label: "Weekly",    days: 7,   hint: "every 7 days" },
@@ -196,6 +196,19 @@ function statusOf(contact) {
 }
 function initialsOf(name) { return name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase(); }
 function daysWord(n) { return n === 1 ? "1 day" : `${n} days`; }
+function timeAgo(str) {
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  const s = Math.floor((Date.now() - d) / 1000);
+  if (s < 60)     return "just now";
+  if (s < 3600)   return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400)  return `${Math.floor(s / 3600)}h ago`;
+  if (s < 172800) return "yesterday";
+  const days = Math.floor(s / 86400);
+  if (days < 30)  return `${days} days ago`;
+  if (days < 365) return `${Math.floor(days / 30)} mo ago`;
+  return `${Math.floor(days / 365)} yr ago`;
+}
   </script>
 
   <!-- ── icons ── -->
@@ -523,7 +536,7 @@ function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift,
                   <div className="tl-kind">{t.kind}</div>
                   {t.note && <div className="tl-note">{t.note}</div>}
                 </div>
-                <div className="tl-when">{t.when}</div>
+                <div className="tl-when">{timeAgo(t.when)}</div>
               </div>
             ))}
           </div>
@@ -591,10 +604,12 @@ function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift,
 const { useState, useMemo, useEffect } = React;
 
 function toRow(c) {
-  return { id: c.id, name: c.name, relation: c.relation, cadence: c.cadence, last_seen: c.lastSeen, notes: c.notes, timeline: c.timeline, gifts: c.gifts };
+  return { id: c.id, name: c.name, relation: c.relation, cadence: c.cadence, last_seen: c.lastContactEpoch || c.lastSeen, notes: c.notes, timeline: c.timeline, gifts: c.gifts };
 }
 function fromRow(r) {
-  return { id: r.id, name: r.name, relation: r.relation, cadence: r.cadence, lastSeen: r.last_seen, notes: r.notes, timeline: r.timeline || [], gifts: r.gifts || [] };
+  const isEpoch = r.last_seen > 100000;
+  const lastSeen = isEpoch ? Math.max(0, Math.floor((Date.now() / 1000 - r.last_seen) / 86400)) : (r.last_seen || 0);
+  return { id: r.id, name: r.name, relation: r.relation, cadence: r.cadence, lastSeen, lastContactEpoch: isEpoch ? r.last_seen : null, notes: r.notes, timeline: r.timeline || [], gifts: r.gifts || [] };
 }
 
 function greetingFor(date) {
@@ -832,7 +847,8 @@ function App() {
   const logTouchpoint = (id, kind = "Reached out") => {
     const contact = contacts.find(c => c.id === id);
     if (!contact) return;
-    const updated = { ...contact, lastSeen: 0, timeline: [{ kind, when: "just now", note: "Logged via Circle" }, ...contact.timeline] };
+    const epochNow = Math.floor(Date.now() / 1000);
+    const updated = { ...contact, lastSeen: 0, lastContactEpoch: epochNow, timeline: [{ kind, when: new Date().toISOString(), note: "Logged via Circle" }, ...contact.timeline] };
     setContacts(cs => cs.map(c => c.id === id ? updated : c));
     if (db) db.from('contacts').update(toRow(updated)).eq('id', id).then(({ error }) => {
       if (error) console.error('Failed to save touchpoint:', error);
@@ -862,7 +878,9 @@ function App() {
   const markUrgent = (id) => {
     const contact = contacts.find(c => c.id === id);
     if (!contact) return;
-    const updated = { ...contact, lastSeen: contact.lastSeen + 30 };
+    const updated = contact.lastContactEpoch
+      ? { ...contact, lastSeen: contact.lastSeen + 30, lastContactEpoch: contact.lastContactEpoch - 30 * 86400 }
+      : { ...contact, lastSeen: contact.lastSeen + 30 };
     setContacts(cs => cs.map(c => c.id === id ? updated : c));
     if (db) db.from('contacts').update(toRow(updated)).eq('id', id).then(({ error }) => {
       if (error) console.error('Failed to mark urgent:', error);
@@ -885,7 +903,8 @@ function App() {
 
   const addContact = ({ name, relation, cadence }) => {
     const id = "c" + Math.random().toString(36).slice(2, 8);
-    const newContact = { id, name, relation, cadence, lastSeen: 0, notes: "", timeline: [{ kind: "Added to circle", when: "just now", note: "" }], gifts: [] };
+    const epochNow = Math.floor(Date.now() / 1000);
+    const newContact = { id, name, relation, cadence, lastSeen: 0, lastContactEpoch: epochNow, notes: "", timeline: [{ kind: "Added to circle", when: new Date().toISOString(), note: "" }], gifts: [] };
     setContacts(cs => [...cs, newContact]);
     if (db) {
       db.from('contacts').insert(toRow(newContact)).then(({ error }) => {
