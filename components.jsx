@@ -320,8 +320,8 @@ function ContactDrawer({ contact, open, onClose, onLog, onToggleGift, onAddGift 
           <button className="btn btn-accent" onClick={() => onLog(contact.id)}>
             <Ic.Check className="icon" /> I reached out
           </button>
-          <button className="btn"><Ic.Phone className="icon" /> Call</button>
-          <button className="btn"><Ic.Message className="icon" /> Message</button>
+          <button className="btn" onClick={() => onLog(contact.id, "Called")}><Ic.Phone className="icon" /> Call</button>
+          <button className="btn" onClick={() => onLog(contact.id, "Messaged")}><Ic.Message className="icon" /> Message</button>
         </div>
       </div>
 

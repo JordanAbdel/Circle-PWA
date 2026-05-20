@@ -275,10 +275,10 @@ function App() {
   const openContact  = (id) => setOpenId(id);
   const closeDrawer  = ()   => setOpenId(null);
 
-  const logTouchpoint = (id) => {
+  const logTouchpoint = (id, kind = "Reached out") => {
     setContacts(cs => cs.map(c =>
       c.id === id
-        ? { ...c, lastSeen: 0, timeline: [{ kind: "Reached out", when: "just now", note: "Logged via Circle" }, ...c.timeline] }
+        ? { ...c, lastSeen: 0, timeline: [{ kind, when: "just now", note: "Logged via Circle" }, ...c.timeline] }
         : c
     ));
   };
